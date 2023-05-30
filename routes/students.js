@@ -1,26 +1,79 @@
 const express = require('express')
 const router = express.Router();
+const studentModel = require('../models/students')
 
 //Get all students
-router.get('/',(request,response)=>{
-    response.send("List of all students")
+router.get('/',async(request,response)=>{
+    try
+    {
+        const students = await studentModel.find()
+        response.status(200).json(students)
+    }
+    catch(error){
+        response.status(500).json({message:error.message})
+    }
 })
 
+//addStudent
+router.post('/',async(request, response)=>{
+    const newStudent = new studentModel({
+        name: request.body.name,
+        enrolledDepartment: request.body.enrolledDepartment,
+        enrollmentDate: request.body.enrollmentDate
+    })
+    try{
+        const student = await newStudent.save()
+        response.status(201).json(student)
+    }
+    catch(error){
+        response.status(500).json({message:error.message})
+    }
+})
 
 //Get student by id
-router.get('/:id',(request,response)=>{
-    response.send(`displaying student with ID ${request.params.id}`)
+router.get('/:id',getStudent,(request,response)=>{
+    response.status(200).json(response.student)
 })
 
 //Updating student
-router.patch('/:id',(request,response)=>{
-    response.send(`updating student with ID ${request.params.id}`)
+router.patch('/:id',getStudent,async(request,response)=>{
+    if(request.body.name!=null){
+        response.student.name = request.body.name;
+    }
+    try{
+        const updateStudent = await response.student.save()
+        response.status(201).json(updateStudent)
+    }
+    catch(error){
+        response.status(400).json({message:error.message})
+    }
 })
 
 //Deleting student
-router.delete('/:id',(request,response)=>{
-    response.send(`deleting student with ID ${request.params.id}`)
+router.delete('/:id',getStudent,async(request,response)=>{
+    try{
+        await response.student.deleteOne();
+        response.json({message:`Deleted user ${response.student.name}`})
+    }
+    catch(error){
+        response.status(400).json({message:error.message})
+    }
 })
+
+async function getStudent(request,response,next){
+    let student;
+    try{
+        student = await studentModel.findById(request.params.id)
+        if(student===null){
+            response.status(404).send({message: `Cannot find user with is ${request.params.id}`})
+        }
+    }
+    catch(error){
+        return response.status(500).send({message:error.message})
+    }
+    response.student = student;
+    next();
+}
 
 
 module.exports = router

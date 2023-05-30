@@ -5,6 +5,8 @@ const studentRouter = require('./routes/students')
 const PORT = 3500
 const mongoose = require('mongoose')
 
+app.use(express.json())
+
 mongoose.connect(process.env.DB_URL)
 const db = mongoose.connection
 db.on('error', errorMessage =>console.log(errorMessage))
